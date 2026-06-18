@@ -1,10 +1,6 @@
 # 🚀 RISC-V Processor in Verilog
 
-A complete implementation of the **RISC-V RV32I Instruction Set Architecture (ISA)** in **Verilog HDL**, featuring both **Single-Cycle** and **Five-Stage Pipelined Processor** architectures. This project was developed from the ground up to understand processor design, datapath organization, control logic, instruction execution, hazard handling, and hardware verification.
-
-The processor follows a modular design methodology and demonstrates how instructions are fetched, decoded, executed, and written back according to the RISC-V specification. The project also serves as a foundation for more advanced features such as forwarding, branch prediction, cache memory, and RV32M extensions.
-
----
+A from-scratch implementation of the **RISC-V RV32I Instruction Set Architecture** in **Verilog HDL**, featuring both a **Single-Cycle** and a **Five-Stage Pipelined** processor — built to explore datapath design, control logic, hazard handling, and hardware verification.
 
 ![Verilog](https://img.shields.io/badge/Language-Verilog-blue)
 ![RISC-V](https://img.shields.io/badge/ISA-RV32I-green)
@@ -15,289 +11,23 @@ The processor follows a modular design methodology and demonstrates how instruct
 ![Platform](https://img.shields.io/badge/Platform-Ubuntu%20%7C%20macOS-lightgrey)
 
 ---
-# 📖 Project Overview
 
-This repository contains custom implementations of the **RISC-V RV32I processor** in **Verilog HDL**, featuring both **Single-Cycle** and **Five-Stage Pipelined** architectures.
+## 📖 Overview
 
-The project focuses on understanding and implementing the fundamental concepts of processor design, including datapath construction, control signal generation, instruction execution, pipelining, and hardware verification.
+| | Single-Cycle | Five-Stage Pipelined |
+|---|---|---|
+| **Throughput** | 1 instruction per cycle, but cycle time = slowest instruction | ~1 instruction/cycle once the pipeline is full |
+| **Datapath** | All stages collapsed into one clock cycle | IF → ID → EX → MEM → WB, overlapped |
+| **Hazards** | None — no overlap to manage | Resolved via forwarding + stalling |
+| **Best for** | Understanding the baseline datapath | Realistic, higher-throughput design |
 
-### Key Highlights
+Both designs use a **Harvard architecture** (separate instruction and data memories) and are verified with **Icarus Verilog** simulation + **GTKWave** waveform analysis.
 
-* RV32I Instruction Set Implementation
-* Single-Cycle Processor Architecture
-* Five-Stage Pipelined Processor Architecture
-* Modular Verilog RTL Design
-* Separate Instruction and Data Memories
-* Register File and ALU Design
-* Immediate Generation and Branch Logic
-* Hazard Detection and Data Forwarding
-* Functional Verification using Icarus Verilog and GTKWave
+**Instructions implemented:** `add` `sub` `and` `or` `slt` (R-type) · `lw` (I-type) · `sw` (S-type) · `beq` (B-type)
 
 ---
 
-# ✨ Features
-
-### Architecture
-
-* Single-Cycle Datapath
-* Five-Stage Pipeline (IF-ID-EX-MEM-WB)
-* Pipeline Registers
-* Hazard Detection Unit
-* Forwarding Unit
-* Branch Handling
-
-### Instruction Support
-
-Supported instruction formats include:
-
-| Instruction Type | Status |
-| ---------------- | ------ |
-| R-Type           | ✅      |
-| I-Type           | ✅      |
-| S-Type           | ✅      |
-| B-Type           | ✅      |
-
-Implemented instructions:
-
-* **R-Type:** add, sub, and, or, slt
-* **I-Type:** lw
-* **S-Type:** sw
-* **B-Type:** beq
-
-### Verification
-
-* Icarus Verilog Simulation
-* GTKWave Waveform Analysis
-* Signal Tracing and Debugging
-* Register and Memory Verification
-
-
----
-# 🏗 Processor Architecture
-
-This repository contains two implementations of the RISC-V RV32I processor:
-
-1. **Single-Cycle Processor**
-2. **Five-Stage Pipelined Processor**
-
-Both processors follow the **Harvard Architecture**, utilizing separate instruction and data memories for improved modularity and simplicity.
-
----
-
-# 🔹 Single-Cycle Processor Architecture
-
-In the single-cycle architecture, every instruction is fetched, decoded, executed, and completed within a single clock cycle.
-
-```text
-Instruction Fetch
-       ↓
-Instruction Decode
-       ↓
-Execute
-       ↓
-Memory Access
-       ↓
-Write Back
-```
-
-Because all stages are completed in one clock cycle, the clock period must be large enough to accommodate the slowest instruction.
-
----
-
-# Single-Cycle Datapath
-
-<img width="689" height="398" alt="Screenshot 2026-06-18 at 4 27 15 PM" src="https://github.com/user-attachments/assets/c809cf91-7b99-4eeb-82f9-2cfacf617f73" />
-
----
-
-# Overall Single-Cycle Execution Flow
-
-```text
-PC
- ↓
-Instruction Memory
- ↓
-Control Unit
- ↓
-Register File
- ↓
-Immediate Generator
- ↓
-ALU
- ↓
-Data Memory
- ↓
-Writeback
-```
-
----
-
-# 🔹 Five-Stage Pipelined Processor Architecture
-
-The pipelined processor improves throughput by overlapping the execution of multiple instructions.
-
-The execution is divided into five stages:
-
-```text
-IF → ID → EX → MEM → WB
-```
-
-Multiple instructions occupy different stages simultaneously.
-
----
-
-# Pipeline Datapath
-<img width="716" height="269" alt="Screenshot 2026-06-18 at 4 28 33 PM" src="https://github.com/user-attachments/assets/c9012310-01fd-410a-b4d7-fcca74fe6a7f" />
-
-
----
-
-# Pipeline Stages
-
-## 1. Instruction Fetch (IF)
-
-Responsible for:
-
-* Fetching instructions from instruction memory
-* Incrementing the Program Counter
-* Computing PC + 4
-
-Outputs:
-
-* Instruction
-* PC
-* PC + 4
-
----
-
-## 2. Instruction Decode (ID)
-
-Responsible for:
-
-* Decoding instruction fields
-* Reading source registers
-* Generating control signals
-* Immediate generation
-
-Outputs:
-
-* RD1
-* RD2
-* Immediate
-* Control signals
-
----
-
-## 3. Execute Stage (EX)
-
-Responsible for:
-
-* ALU operations
-* Address calculation
-* Branch target generation
-* Branch comparison
-
-Outputs:
-
-* ALU Result
-* Zero Flag
-* Branch Target Address
-
----
-
-## 4. Memory Stage (MEM)
-
-Responsible for:
-
-* Data memory read
-* Data memory write
-
-Outputs:
-
-* Memory Data
-* ALU Result
-
----
-
-## 5. Writeback Stage (WB)
-
-Responsible for writing results back into the register file.
-
-Possible writeback sources:
-
-* ALU Result
-* Data Memory Output
-* PC + 4
-
----
-
-# Pipeline Registers
-
-Pipeline registers isolate each stage and allow instructions to execute concurrently.
-
----
-
-## IF/ID Register
-
-Stores:
-
-* Instruction
-* PC
-* PC + 4
-
----
-
-## ID/EX Register
-
-Stores:
-
-* Register operands
-* Immediate values
-* Destination register
-* Control signals
-
----
-
-## EX/MEM Register
-
-Stores:
-
-* ALU result
-* Memory write data
-* Destination register
-* Memory control signals
-
----
-
-## MEM/WB Register
-
-Stores:
-
-* Memory read data
-* ALU result
-* Destination register
-* Writeback control signals
-
----
-
-# Harvard Architecture
-
-The processor uses separate memories for instructions and data.
-
-Advantages:
-
-✅ Simultaneous instruction fetch and memory access
-
-✅ Simplified datapath
-
-✅ Increased throughput
-
-✅ Better modularity
-
----
-# 📂 Repository Structure
-
-The project is organized into modular Verilog components to simplify debugging, testing, and future extensions. Each module performs a specific task within the processor datapath.
+## 📂 Repository Structure
 
 ```text
 RISC-V/
@@ -310,7 +40,7 @@ RISC-V/
 │   ├── instruction_memory.v
 │   ├── register_file.v
 │   ├── sign_extend.v
-│   ├── alu.v 
+│   ├── alu.v
 │   ├── alu_decoder.v
 │   ├── main_decoder.v
 │   ├── control_unit_top.v
@@ -342,247 +72,90 @@ RISC-V/
 
 ---
 
-# 🔧 Module Descriptions
+## 🔹 Single-Cycle Architecture
 
-The processor is divided into reusable modules, each responsible for a specific function.
+Every instruction is fetched, decoded, executed, and written back within a single clock cycle — so the clock period must accommodate the slowest instruction in the ISA.
 
----
+<img width="689" height="398" alt="Single-cycle datapath" src="https://github.com/user-attachments/assets/c809cf91-7b99-4eeb-82f9-2cfacf617f73" />
 
-## Program Counter (`pc.v`)
-
-Maintains the address of the current instruction.
-
-### Responsibilities
-
-* Store current PC value
-* Update PC every clock cycle
-* Support branch target selection
-
-### Inputs
-
-* Clock
-* Reset
-* Next PC
-
-### Outputs
-
-* Current PC
+| Module | File | Role |
+|---|---|---|
+| Program Counter | `pc.v` | Holds and updates the current instruction address |
+| PC Adder | `pcadder.v` | Computes PC + 4 |
+| Instruction Memory | `instruction_memory.v` | Returns the instruction stored at the current PC |
+| Register File | `register_file.v` | 32 × 32-bit registers (x0–x31): 2 combinational read ports, 1 synchronous write port |
+| Sign Extension Unit | `sign_extend.v` | Generates 32-bit signed immediates for I/S/B-type instructions |
+| ALU | `alu.v` | ADD, SUB, AND, OR, SLT — outputs result and zero flag |
+| Main Decoder | `main_decoder.v` | Decodes opcode into RegWrite, ALUSrc, MemWrite, ResultSrc, Branch, ALUOp |
+| ALU Decoder | `alu_decoder.v` | Combines ALUOp, funct3, funct7 into the ALU control signal |
+| Control Unit | `control_unit_top.v` | Wraps the Main and ALU decoders |
+| Branch Adder | `branch_adder.v` | Computes PC + immediate for branch targets |
+| Data Memory | `data_memory.v` | Services `lw` / `sw` memory access |
+| Multiplexers | `mux.v` | Select ALU operands, writeback source, and next PC |
 
 ---
 
-## PC Adder (`pcadder.v`)
+## ⚡ Five-Stage Pipelined Architecture
 
-Computes:
+Instruction execution is split into five overlapping stages so multiple instructions are in flight at once:
 
 ```text
-PC + 4
+IF → ID → EX → MEM → WB
 ```
 
-which points to the next sequential instruction.
+<img width="716" height="269" alt="Pipeline datapath" src="https://github.com/user-attachments/assets/c9012310-01fd-410a-b4d7-fcca74fe6a7f" />
 
----
+**Stages**
 
-## Instruction Memory (`instruction_memory.v`)
+| Stage | Responsibilities | Outputs |
+|---|---|---|
+| **IF** — Fetch | Fetch instruction, increment PC | Instruction, PC, PC+4 |
+| **ID** — Decode | Decode fields, read registers, generate immediate & control signals | RD1, RD2, Immediate, Control signals |
+| **EX** — Execute | ALU operation, address/branch target calculation | ALU result, Zero flag, Branch target |
+| **MEM** — Memory | Read/write data memory | Memory data, ALU result |
+| **WB** — Writeback | Write the selected result into the register file | — |
 
-Stores machine instructions.
+**Pipeline Registers**
 
-### Input
+| Register | Stores |
+|---|---|
+| IF/ID | Instruction, PC, PC+4 |
+| ID/EX | Operands, immediate, destination register, control signals |
+| EX/MEM | ALU result, memory write data, destination register, memory control signals |
+| MEM/WB | Memory read data, ALU result, destination register, writeback control signals |
 
-* PC
+**Files:** `fetch_cycle.v` · `decode_cycle.v` · `execute_cycle.v` · `memory_cycle.v` · `writeback_cycle.v` · `forwarding_unit.v` · `hazard_unit.v`
 
-### Output
+### Hazard Handling
 
-* Instruction
+- **Data hazards** — `add x5,x1,x2` followed by `sub x6,x5,x3` needs x5 before ADD finishes writing back. The **forwarding unit** routes results straight from the EX/MEM and MEM/WB registers into EX, eliminating the stall in most cases.
+- **Load-use hazards** — a load's value isn't ready until MEM, so `lw x5,0(x1)` followed by `add x6,x5,x2` can't be fixed by forwarding alone. The **hazard detection unit** catches this and inserts one stall cycle.
+- **Branch hazards** — the next PC is unknown until a branch resolves in EX; a misprediction means flushing whatever was already fetched behind it.
 
-### Purpose
-
-Provides instructions to the fetch stage.
-
----
-
-## Register File (`register_file.v`)
-
-Implements the 32 general-purpose RISC-V registers.
-
-### Features
-
-* Two read ports
-* One write port
-* Synchronous write
-* Combinational read
-
-### Registers
+### Pipeline Overlap in Action
 
 ```text
-x0 – x31
+              Cycle →   1    2    3    4    5    6    7    8
+lw  x1, 0(x0)           IF   ID   EX   MEM  WB
+lw  x2, 4(x0)                IF   ID   EX   MEM  WB
+or  x3, x1, x2                    IF   ID   EX   MEM  WB
+sw  x3, 8(x0)                          IF   ID   EX   MEM
 ```
 
-### Responsibilities
-
-* Read rs1
-* Read rs2
-* Write rd
+Four instructions finish in 8 cycles instead of the 20 cycles a single-cycle design would need — the throughput gain that justifies the added hazard logic.
 
 ---
 
-## Sign Extension Unit (`sign_extend.v`)
+## 📚 Instruction Set
 
-Generates immediate values for different instruction formats.
+| Type | Opcode | funct3 | funct7 | Instructions |
+|---|---|---|---|---|
+| R-Type | `0110011` | varies | varies | `add` `sub` `and` `or` `slt` |
+| I-Type | `0000011` | `010` | – | `lw` |
+| S-Type | `0100011` | `010` | – | `sw` |
+| B-Type | `1100011` | `000` | – | `beq` |
 
-Supported immediates:
-
-* I-Type
-* S-Type
-* B-Type
-
-### Purpose
-
-Converts instruction fields into 32-bit signed values.
-
----
-
-## Arithmetic Logic Unit (`alu.v`)
-
-Performs arithmetic and logical operations.
-
-### Supported Operations
-
-| Operation | Description   |
-| --------- | ------------- |
-| ADD       | Addition      |
-| SUB       | Subtraction   |
-| AND       | Bitwise AND   |
-| OR        | Bitwise OR    |
-| SLT       | Set Less Than |
-
-### Outputs
-
-* Result
-* Zero flag
-
----
-
-## Main Decoder (`main_decoder.v`)
-
-Decodes the opcode field and generates control signals.
-
-Generated signals:
-
-* RegWrite
-* ALUSrc
-* MemWrite
-* ResultSrc
-* Branch
-* ALUOp
-
----
-
-## ALU Decoder (`alu_decoder.v`)
-
-Uses:
-
-* ALUOp
-* funct3
-* funct7
-
-to generate the ALU control signal.
-
----
-
-## Control Unit (`control_unit_top.v`)
-
-Combines:
-
-* Main Decoder
-* ALU Decoder
-
-to generate all processor control signals.
-
----
-
-## Branch Adder (`branch_adder.v`)
-
-Computes:
-
-```text
-PC + Immediate
-```
-
-Used for branch instructions.
-
----
-
-## Data Memory (`data_memory.v`)
-
-Provides memory access for:
-
-### Load Operations
-
-```assembly
-lw
-```
-
-### Store Operations
-
-```assembly
-sw
-```
-
-Supports:
-
-* Memory Read
-* Memory Write
-
----
-
-## Multiplexers (`mux.v`)
-
-Control data flow throughout the datapath.
-
-Used for selecting:
-
-* ALU operands
-* Writeback source
-* Next PC
-
----
-# 📚 Instruction Set Architecture
-
-The processor implements a subset of the **RV32I Base Integer Instruction Set**. The current implementation supports **R-Type**, **I-Type**, **S-Type**, and **B-Type** instructions.
-
----
-
-# Supported Instruction Formats
-
-| Instruction Type | Description                     | Status |
-| ---------------- | ------------------------------- | ------ |
-| R-Type           | Register-to-Register Operations | ✅      |
-| I-Type           | Load Operations                 | ✅      |
-| S-Type           | Store Operations                | ✅      |
-| B-Type           | Conditional Branch Operations   | ✅      |
-
----
-
-# Supported Instructions
-
-| Instruction | Type | Opcode  | funct3 | funct7  | Description   |
-| ----------- | ---- | ------- | ------ | ------- | ------------- |
-| add         | R    | 0110011 | 000    | 0000000 | Addition      |
-| sub         | R    | 0110011 | 000    | 0100000 | Subtraction   |
-| and         | R    | 0110011 | 111    | 0000000 | Bitwise AND   |
-| or          | R    | 0110011 | 110    | 0000000 | Bitwise OR    |
-| slt         | R    | 0110011 | 010    | 0000000 | Set Less Than |
-| lw          | I    | 0000011 | 010    | -       | Load Word     |
-| sw          | S    | 0100011 | 010    | -       | Store Word    |
-| beq         | B    | 1100011 | 000    | -       | Branch Equal  |
-
----
-
-# 🔹 R-Type Instructions
-
-R-Type instructions perform arithmetic and logical operations between two source registers.
-
-### Instruction Format
+### R-Type — Register-to-Register
 
 ```text
 31      25 24   20 19   15 14 12 11    7 6      0
@@ -591,46 +164,19 @@ R-Type instructions perform arithmetic and logical operations between two source
 +---------+-------+-------+------+-------+--------+
 ```
 
----
+| Instruction | Operation |
+|---|---|
+| add | rd = rs1 + rs2 |
+| sub | rd = rs1 − rs2 |
+| and | rd = rs1 & rs2 |
+| or | rd = rs1 \| rs2 |
+| slt | rd = (rs1 < rs2) ? 1 : 0 |
 
-## Implemented Operations
+**Example:** `or x4, x5, x6` → `x4 = x5 | x6` → machine code `0x0062E233`
 
-| Instruction | Operation                |
-| ----------- | ------------------------ |
-| add         | rd = rs1 + rs2           |
-| sub         | rd = rs1 - rs2           |
-| and         | rd = rs1 & rs2           |
-| or          | rd = rs1 | rs2           |
-| slt         | rd = (rs1 < rs2) ? 1 : 0 |
+<img width="600" alt="R-type waveform" src="https://github.com/user-attachments/assets/03cf9fb2-c3e6-41d5-875c-3b6dbdda7b50" />
 
----
-
-### Example
-
-```assembly
-or x4, x5, x6
-```
-
-Operation:
-
-```text
-x4 = x5 OR x6
-```
-
-Machine Code:
-
-```text
-0062E233
-```
-<img width="1470" height="956" alt="Rtype" src="https://github.com/user-attachments/assets/03cf9fb2-c3e6-41d5-875c-3b6dbdda7b50" />
-
----
-
-# 🔹 I-Type Instructions
-
-I-Type instructions use an immediate operand together with a source register.
-
-### Instruction Format
+### I-Type — Load
 
 ```text
 31                     20 19   15 14 12 11    7 6      0
@@ -639,41 +185,13 @@ I-Type instructions use an immediate operand together with a source register.
 +-----------------------+-------+------+-------+--------+
 ```
 
----
+`rd = Mem[rs1 + immediate]`
 
-## Implemented Operations
+**Example:** `lw x6, -4(x9)` → `x6 = Mem[x9 - 4]` → machine code `0xFFC4A303`
 
-| Instruction | Operation                 |
-| ----------- | ------------------------- |
-| lw          | rd = Mem[rs1 + immediate] |
+<img width="600" alt="I-type waveform" src="https://github.com/user-attachments/assets/203b4162-d411-43ae-89a6-cad5273f31be" />
 
----
-
-### Example
-
-```assembly
-lw x6, -4(x9)
-```
-
-Operation:
-
-```text
-x6 = Mem[x9 - 4]
-```
-
-Machine Code:
-
-```text
-FFC4A303
-```
-<img width="1470" height="956" alt="Itypess" src="https://github.com/user-attachments/assets/203b4162-d411-43ae-89a6-cad5273f31be" />
----
-
-# 🔹 S-Type Instructions
-
-S-Type instructions are used for memory write operations.
-
-### Instruction Format
+### S-Type — Store
 
 ```text
 31      25 24   20 19   15 14 12 11    7 6      0
@@ -682,42 +200,13 @@ S-Type instructions are used for memory write operations.
 +---------+-------+-------+------+-------+--------+
 ```
 
----
+`Mem[rs1 + immediate] = rs2`
 
-## Implemented Operations
+**Example:** `sw x6, 8(x9)` → `Mem[x9 + 8] = x6` → machine code `0x0064A423`
 
-| Instruction | Operation                  |
-| ----------- | -------------------------- |
-| sw          | Mem[rs1 + immediate] = rs2 |
+<img width="600" alt="S-type waveform" src="https://github.com/user-attachments/assets/8aa03144-7e39-417a-b031-bd4910bbe288" />
 
----
-
-### Example
-
-```assembly
-sw x6, 8(x9)
-```
-
-Operation:
-
-```text
-Mem[x9 + 8] = x6
-```
-
-Machine Code:
-
-```text
-0064A423
-```
-<img width="1470" height="956" alt="stype" src="https://github.com/user-attachments/assets/8aa03144-7e39-417a-b031-bd4910bbe288" />
-
----
-
-# 🔹 B-Type Instructions
-
-B-Type instructions modify the Program Counter based on the result of a comparison.
-
-### Instruction Format
+### B-Type — Conditional Branch
 
 ```text
 31      30 25 24   20 19   15 14 12 11   8 7     6      0
@@ -726,376 +215,34 @@ B-Type instructions modify the Program Counter based on the result of a comparis
 +--------+-----+-------+-------+------+-----+----+--------+
 ```
 
----
+`if (rs1 == rs2) PC += offset; else PC += 4`
 
-## Implemented Operations
+**Example:** `beq x2, x3, label`
 
-| Instruction | Operation            |
-| ----------- | -------------------- |
-| beq         | Branch if rs1 == rs2 |
+<img width="600" alt="B-type waveform" src="https://github.com/user-attachments/assets/0087680b-a7c4-4864-b19a-b2f68bbcdcd2" />
 
 ---
 
-### Example
+## 🔭 Future Improvements
 
-```assembly
-beq x2, x3, label
-```
-
-Operation:
-
-```text
-if (x2 == x3)
-    PC = PC + offset
-else
-    PC = PC + 4
-```
-<img width="1470" height="956" alt="B type" src="https://github.com/user-attachments/assets/0087680b-a7c4-4864-b19a-b2f68bbcdcd2" />
----
-
-
-# Pipeline Stages
-
-## 1. Instruction Fetch (IF)
-
-Responsible for:
-
-* Fetching instructions from instruction memory
-* Maintaining and updating the Program Counter
-* Computing PC + 4
-
-### Inputs
-
-* Current PC
-
-### Outputs
-
-* Instruction
-* PC
-* PC + 4
+- Branch prediction & pipeline flushing logic
+- Cache memory
+- Dynamic hazard resolution / out-of-order execution
+- Superscalar architecture
+- RV32M extension
+- FPGA implementation
 
 ---
 
-## 2. Instruction Decode (ID)
+## 📚 References
 
-Responsible for:
-
-* Decoding the instruction
-* Reading source registers
-* Generating immediate values
-* Producing control signals
-
-### Outputs
-
-* RD1
-* RD2
-* Immediate value
-* Destination register
-* Control signals
+- *Digital Design and Computer Architecture: RISC-V Edition* — Sarah Harris & David Harris
+- RISC-V ISA Manual
+- *Computer Organization and Design* — Patterson & Hennessy
+- RISC-V Foundation Documentation
 
 ---
 
-## 3. Execute Stage (EX)
-
-Responsible for:
-
-* Performing ALU operations
-* Address calculation
-* Branch target generation
-* Operand selection
-
-### Outputs
-
-* ALU Result
-* Zero Flag
-* Branch Address
-
----
-
-## 4. Memory Access Stage (MEM)
-
-Responsible for:
-
-* Reading from data memory
-* Writing to data memory
-
-### Outputs
-
-* Read Data
-* ALU Result
-
----
-
-## 5. Write Back Stage (WB)
-
-Responsible for writing results back into the register file.
-
-Writeback sources:
-
-* ALU Result
-* Memory Read Data
-* PC + 4
-
----
-
-# Pipeline Registers
-
-Pipeline registers isolate each stage and preserve intermediate results.
-
----
-
-## IF/ID Register
-
-Stores:
-
-* Instruction
-* PC
-* PC + 4
-
-Purpose:
-
-Transfers information from Fetch stage to Decode stage.
-
----
-
-## ID/EX Register
-
-Stores:
-
-* Register operands
-* Immediate values
-* Destination register
-* Control signals
-
-Purpose:
-
-Transfers decoded information to Execute stage.
-
----
-
-## EX/MEM Register
-
-Stores:
-
-* ALU result
-* Write data
-* Destination register
-* Memory control signals
-
-Purpose:
-
-Transfers execution results to Memory stage.
-
----
-
-## MEM/WB Register
-
-Stores:
-
-* Memory read data
-* ALU result
-* Destination register
-* Writeback control signals
-
-Purpose:
-
-Transfers final results to Writeback stage.
-
----
-
-# Instruction Overlap
-
-Pipeline execution enables multiple instructions to occupy different stages simultaneously.
-
-Example:
-
-```assembly
-lw   x1,0(x0)
-lw   x2,4(x0)
-or   x3,x1,x2
-sw   x3,8(x0)
-```
-
-Pipeline execution:
-
-```text
-Cycle →      1    2    3    4    5    6    7    8
-
-lw x1         IF   ID   EX  MEM  WB
-
-lw x2              IF   ID   EX  MEM  WB
-
-or x3                   IF   ID   EX  MEM  WB
-
-sw x3                        IF   ID   EX  MEM
-```
-
-Thus, multiple instructions are executed concurrently.
-
----
-
-# Data Hazards
-
-A data hazard occurs when an instruction depends on the result of a previous instruction that has not yet completed.
-
-Example:
-
-```assembly
-add x5,x1,x2
-sub x6,x5,x3
-```
-
-The SUB instruction requires x5 before the ADD instruction completes.
-
----
-
-# Forwarding Unit
-
-To avoid unnecessary stalls, a forwarding unit is implemented.
-
-It forwards results from later stages directly to the Execute stage.
-
-Forwarding sources:
-
-* EX/MEM stage
-* MEM/WB stage
-
-Benefits:
-
-✅ Reduces stalls
-
-✅ Improves throughput
-
-✅ Eliminates unnecessary waiting
-
----
-
-# Hazard Detection Unit
-
-Some hazards cannot be resolved using forwarding alone.
-
-Example:
-
-```assembly
-lw  x5,0(x1)
-add x6,x5,x2
-```
-
-Since the data from memory becomes available only after the MEM stage, the ADD instruction must be delayed.
-
-The hazard detection unit:
-
-* Detects load-use hazards
-* Inserts stalls when necessary
-* Prevents incorrect execution
-
----
-
-# Branch Hazards
-
-Branch instructions can change program flow.
-
-Example:
-
-```assembly
-beq x1,x2,label
-```
-
-Until the comparison is complete, the processor does not know the next PC value.
-
-Branch hazards may cause:
-
-* Incorrect instruction fetch
-* Pipeline flushing
-
----
-
-# Pipeline Performance
-
-### Single-Cycle Processor
-
-```text
-One instruction completes every clock cycle.
-```
-
-Execution:
-
-```text
-Instr1
-Instr2
-Instr3
-Instr4
-```
-
-Sequential execution.
-
----
-
-### Pipelined Processor
-
-```text
-Multiple instructions execute simultaneously.
-```
-
-Execution:
-
-```text
-Cycle 1 : Instr1 IF
-
-Cycle 2 : Instr1 ID
-          Instr2 IF
-
-Cycle 3 : Instr1 EX
-          Instr2 ID
-          Instr3 IF
-
-Cycle 4 : Instr1 MEM
-          Instr2 EX
-          Instr3 ID
-          Instr4 IF
-```
-
-Result:
-
-Higher instruction throughput.
-
----
-
-# Advantages of Pipelining
-
-✅ Increased throughput
-
-✅ Better hardware utilization
-
-✅ Reduced average instruction execution time
-
-✅ Improved processor performance
-
-✅ Foundation for advanced architectures
-
----
-
-
-
-# 📚 References
-
-This project is based primarily on:
-
-### Digital Design and Computer Architecture: RISC-V Edition
-
-**Sarah Harris and David Harris**
-
-Additional references:
-
-* RISC-V ISA Manual
-* Computer Organization and Design – Patterson & Hennessy
-* RISC-V Foundation Documentation
-
----
-
-#  Author
+## ✍️ Author
 
 **Yashvi Doshi**
-
-
----
