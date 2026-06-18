@@ -260,7 +260,7 @@ Here's how each type is laid out in memory, bit by bit:
 
 ---
 
-## 🔭 What's Next
+##  What's Next
 
 Ideas for taking this further:
 
@@ -273,7 +273,7 @@ Ideas for taking this further:
 
 ---
 
-## 📚 References
+##  References
 
 - *Digital Design and Computer Architecture: RISC-V Edition* — Sarah Harris & David Harris
 - RISC-V ISA Manual
@@ -282,6 +282,6 @@ Ideas for taking this further:
 
 ---
 
-## ✍️ Author
+##  Author
 
 **Yashvi Doshi**
