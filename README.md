@@ -1,6 +1,6 @@
 # 🚀 RISC-V Processor in Verilog
 
-A from-scratch implementation of the **RISC-V RV32I Instruction Set Architecture** in **Verilog HDL**, featuring both a **Single-Cycle** and a **Five-Stage Pipelined** processor — built to explore datapath design, control logic, hazard handling, and hardware verification.
+I built a working CPU — one that actually reads and runs RISC-V instructions — in two versions: a **simple, one-step-at-a-time design** and a **fast, five-stage pipelined design**. Both are written in Verilog, simulated with Icarus Verilog, and verified waveform-by-waveform in GTKWave.
 
 ![Verilog](https://img.shields.io/badge/Language-Verilog-blue)
 ![RISC-V](https://img.shields.io/badge/ISA-RV32I-green)
@@ -12,22 +12,22 @@ A from-scratch implementation of the **RISC-V RV32I Instruction Set Architecture
 
 ---
 
-## 📖 Overview
+## 📖 What's Inside
 
-| | Single-Cycle | Five-Stage Pipelined |
+Think of a CPU as a tiny factory: instructions come in ("add these two numbers," "load this value"), and results come out. This project builds that factory two different ways.
+
+| | 🐢 Single-Cycle | ⚡ Pipelined |
 |---|---|---|
-| **Throughput** | 1 instruction per cycle, but cycle time = slowest instruction | ~1 instruction/cycle once the pipeline is full |
-| **Datapath** | All stages collapsed into one clock cycle | IF → ID → EX → MEM → WB, overlapped |
-| **Hazards** | None — no overlap to manage | Resolved via forwarding + stalling |
-| **Best for** | Understanding the baseline datapath | Realistic, higher-throughput design |
+| **How it runs instructions** | Finishes one instruction completely before starting the next | Works on multiple instructions at once, like an assembly line |
+| **Speed** | One instruction per (long) clock cycle | Close to one instruction per (much shorter) clock cycle |
+| **Complexity** | Simple — easy to follow and debug | Needs extra logic so instructions don't trip over each other |
+| **What it's good for** | Learning how a CPU works, step by step | Seeing how real-world CPUs actually get fast |
 
-Both designs use a **Harvard architecture** (separate instruction and data memories) and are verified with **Icarus Verilog** simulation + **GTKWave** waveform analysis.
-
-**Instructions implemented:** `add` `sub` `and` `or` `slt` (R-type) · `lw` (I-type) · `sw` (S-type) · `beq` (B-type)
+Both versions keep instructions and data in separate memories — a setup called a **Harvard architecture** — and both support the same eight instructions: `add` `sub` `and` `or` `slt` `lw` `sw` `beq`.
 
 ---
 
-## 📂 Repository Structure
+## 📂 How the Code Is Organized
 
 ```text
 RISC-V/
@@ -72,32 +72,32 @@ RISC-V/
 
 ---
 
-## 🔹 Single-Cycle Architecture
+## 🔹 Single-Cycle Processor: The Simple Version
 
-Every instruction is fetched, decoded, executed, and written back within a single clock cycle — so the clock period must accommodate the slowest instruction in the ISA.
+Picture reading one full instruction, doing everything it asks for, and only then moving to the next. That's the single-cycle design: fetch, decode, execute, access memory, and write back the result — all within one clock tick. Because everything has to fit in that one tick, the clock has to run slow enough for even the most complicated instruction to finish.
 
 <img width="689" height="398" alt="Single-cycle datapath" src="https://github.com/user-attachments/assets/c809cf91-7b99-4eeb-82f9-2cfacf617f73" />
 
-| Module | File | Role |
+| Module | File | What it does |
 |---|---|---|
-| Program Counter | `pc.v` | Holds and updates the current instruction address |
-| PC Adder | `pcadder.v` | Computes PC + 4 |
-| Instruction Memory | `instruction_memory.v` | Returns the instruction stored at the current PC |
-| Register File | `register_file.v` | 32 × 32-bit registers (x0–x31): 2 combinational read ports, 1 synchronous write port |
-| Sign Extension Unit | `sign_extend.v` | Generates 32-bit signed immediates for I/S/B-type instructions |
-| ALU | `alu.v` | ADD, SUB, AND, OR, SLT — outputs result and zero flag |
-| Main Decoder | `main_decoder.v` | Decodes opcode into RegWrite, ALUSrc, MemWrite, ResultSrc, Branch, ALUOp |
-| ALU Decoder | `alu_decoder.v` | Combines ALUOp, funct3, funct7 into the ALU control signal |
-| Control Unit | `control_unit_top.v` | Wraps the Main and ALU decoders |
-| Branch Adder | `branch_adder.v` | Computes PC + immediate for branch targets |
-| Data Memory | `data_memory.v` | Services `lw` / `sw` memory access |
-| Multiplexers | `mux.v` | Select ALU operands, writeback source, and next PC |
+| Program Counter | `pc.v` | Keeps track of the address of the instruction currently running |
+| PC Adder | `pcadder.v` | Works out the next instruction's address (current address + 4) |
+| Instruction Memory | `instruction_memory.v` | Looks up the instruction stored at a given address |
+| Register File | `register_file.v` | The CPU's 32 scratchpad slots (x0–x31) for holding values |
+| Sign Extension Unit | `sign_extend.v` | Turns the short immediate values packed into an instruction into full 32-bit numbers |
+| ALU | `alu.v` | Does the actual math and logic — add, subtract, AND, OR, compare |
+| Main Decoder | `main_decoder.v` | Reads the opcode and decides what the rest of the CPU should do |
+| ALU Decoder | `alu_decoder.v` | Figures out exactly which ALU operation to run |
+| Control Unit | `control_unit_top.v` | Combines the two decoders above into one control hub |
+| Branch Adder | `branch_adder.v` | Works out where to jump to for branch instructions |
+| Data Memory | `data_memory.v` | Handles reading and writing data for `lw` and `sw` |
+| Multiplexers | `mux.v` | Pick which signal flows through the datapath at each decision point |
 
 ---
 
-## ⚡ Five-Stage Pipelined Architecture
+## ⚡ Pipelined Processor: The Fast Version
 
-Instruction execution is split into five overlapping stages so multiple instructions are in flight at once:
+Now imagine an assembly line instead of one person doing every step alone. While one instruction is being decoded, the next is already being fetched, and the one before that is already running through the ALU. That's pipelining — five stages, each working on a different instruction, all at the same time.
 
 ```text
 IF → ID → EX → MEM → WB
@@ -105,34 +105,29 @@ IF → ID → EX → MEM → WB
 
 <img width="716" height="269" alt="Pipeline datapath" src="https://github.com/user-attachments/assets/c9012310-01fd-410a-b4d7-fcca74fe6a7f" />
 
-**Stages**
+**The five stages, in plain terms**
 
-| Stage | Responsibilities | Outputs |
-|---|---|---|
-| **IF** — Fetch | Fetch instruction, increment PC | Instruction, PC, PC+4 |
-| **ID** — Decode | Decode fields, read registers, generate immediate & control signals | RD1, RD2, Immediate, Control signals |
-| **EX** — Execute | ALU operation, address/branch target calculation | ALU result, Zero flag, Branch target |
-| **MEM** — Memory | Read/write data memory | Memory data, ALU result |
-| **WB** — Writeback | Write the selected result into the register file | — |
-
-**Pipeline Registers**
-
-| Register | Stores |
+| Stage | What it does |
 |---|---|
-| IF/ID | Instruction, PC, PC+4 |
-| ID/EX | Operands, immediate, destination register, control signals |
-| EX/MEM | ALU result, memory write data, destination register, memory control signals |
-| MEM/WB | Memory read data, ALU result, destination register, writeback control signals |
+| **IF** — Fetch | Grabs the next instruction and moves the program counter forward |
+| **ID** — Decode | Figures out what the instruction wants and reads the registers it needs |
+| **EX** — Execute | Does the math, or works out a memory/branch address |
+| **MEM** — Memory | Reads from or writes to data memory, if the instruction needs it |
+| **WB** — Writeback | Saves the result back into the register file |
+
+A small register sits between every pair of stages, holding everything the next stage will need: instruction details, computed values, control signals. These are the **IF/ID**, **ID/EX**, **EX/MEM**, and **MEM/WB** registers.
 
 **Files:** `fetch_cycle.v` · `decode_cycle.v` · `execute_cycle.v` · `memory_cycle.v` · `writeback_cycle.v` · `forwarding_unit.v` · `hazard_unit.v`
 
-### Hazard Handling
+### When Instructions Get in Each Other's Way
 
-- **Data hazards** — `add x5,x1,x2` followed by `sub x6,x5,x3` needs x5 before ADD finishes writing back. The **forwarding unit** routes results straight from the EX/MEM and MEM/WB registers into EX, eliminating the stall in most cases.
-- **Load-use hazards** — a load's value isn't ready until MEM, so `lw x5,0(x1)` followed by `add x6,x5,x2` can't be fixed by forwarding alone. The **hazard detection unit** catches this and inserts one stall cycle.
-- **Branch hazards** — the next PC is unknown until a branch resolves in EX; a misprediction means flushing whatever was already fetched behind it.
+Running five instructions at once works great — until one of them needs a result that another hasn't produced yet. This design handles three of those situations:
 
-### Pipeline Overlap in Action
+- **"I need that number, but it's not ready yet."** One instruction computes a value, and the very next instruction needs it immediately. Instead of waiting, the **forwarding unit** grabs the result straight from a later stage and feeds it in early.
+- **"I need it, but it's still coming from memory."** A value loaded from memory isn't ready until the MEM stage, so forwarding alone can't save it. The **hazard detection unit** spots this and pauses the pipeline for exactly one cycle.
+- **"I don't know where to go next."** Until a branch instruction is fully resolved, the CPU doesn't know whether to keep going straight or jump elsewhere. Guess wrong, and it has to throw away (flush) whatever it already started fetching.
+
+### Seeing the Speedup
 
 ```text
               Cycle →   1    2    3    4    5    6    7    8
@@ -142,11 +137,51 @@ or  x3, x1, x2                    IF   ID   EX   MEM  WB
 sw  x3, 8(x0)                          IF   ID   EX   MEM
 ```
 
-Four instructions finish in 8 cycles instead of the 20 cycles a single-cycle design would need — the throughput gain that justifies the added hazard logic.
+These four instructions finish in 8 cycles here, instead of the 20 cycles a single-cycle design would need for the same four — that's the whole point of pipelining.
 
 ---
 
-## 📚 Instruction Set
+## 🧪 Proof It Works: A Real Program, Traced Step by Step
+
+Designing a pipeline on paper is one thing. Proving it actually runs a program correctly is another. Here's a tiny six-instruction program, loaded straight into the processor, with the GTKWave trace to back it up.
+
+`memfile.hex`, loaded into instruction memory starting at address `0x00000000`:
+
+```text
+@00000000
+00500293
+00300313
+006283B3
+00002403
+00100493
+00940533
+```
+
+Disassembled:
+
+| Address | Hex | Instruction | Effect |
+|---|---|---|---|
+| 0x00 | `00500293` | `addi x5, x0, 5` | x5 = 5 |
+| 0x04 | `00300313` | `addi x6, x0, 3` | x6 = 3 |
+| 0x08 | `006283B3` | `add  x7, x5, x6` | x7 = 8 |
+| 0x0c | `00002403` | `lw   x8, 0(x0)` | x8 = Mem[0] |
+| 0x10 | `00100493` | `addi x9, x0, 1` | x9 = 1 |
+| 0x14 | `00940533` | `add  x10, x8, x9` | x10 = x8 + x9 |
+
+GTKWave trace of `pipeline_tb` running this program:
+
+<img width="1470" height="956" alt="Pipeline execution waveform trace" src="https://github.com/user-attachments/assets/71ed63f5-43aa-4af3-af36-9b93b30dc765" />
+
+What this trace proves:
+
+- The program counter and fetched instruction step forward one at a time (`0x00 → 0x14`) with zero stalls, since none of these six instructions create a load-use hazard.
+- At the EX stage, the register numbers in the hardware match exactly what we'd expect — e.g. `add x10, x8, x9` shows up as `rdE=0a`, `rs1E=08`, `rs2E=09`.
+- Right when `add x10, x8, x9` reaches EX, `forwardAE` switches on. That's the forwarding unit stepping in: `x8` was written two instructions earlier by `lw` and hasn't reached the register file yet, so its value gets routed in directly instead of stalling the pipeline.
+- Every instruction that writes to a register lights up `regwriteM` and then `regwriteW` exactly once, confirming all five results land correctly.
+
+---
+
+## 📚 Instructions It Understands
 
 | Type | Opcode | funct3 | funct7 | Instructions |
 |---|---|---|---|---|
@@ -154,6 +189,8 @@ Four instructions finish in 8 cycles instead of the 20 cycles a single-cycle des
 | I-Type | `0000011` | `010` | – | `lw` |
 | S-Type | `0100011` | `010` | – | `sw` |
 | B-Type | `1100011` | `000` | – | `beq` |
+
+Here's how each type is laid out in memory, bit by bit:
 
 ### R-Type — Register-to-Register
 
@@ -223,7 +260,9 @@ Four instructions finish in 8 cycles instead of the 20 cycles a single-cycle des
 
 ---
 
-## 🔭 Future Improvements
+## 🔭 What's Next
+
+Ideas for taking this further:
 
 - Branch prediction & pipeline flushing logic
 - Cache memory
