@@ -546,108 +546,6 @@ Used for selecting:
 * Next PC
 
 ---
-
-# 🔄 Pipeline Modules
-
-The pipelined processor separates execution into stages.
-
----
-
-## Fetch Stage (`fetch_cycle.v`)
-
-Responsibilities:
-
-* Fetch instruction
-* Generate PC + 4
-* Update Program Counter
-
-Outputs:
-
-* Instruction
-* PC
-* PC + 4
-
----
-
-## Decode Stage (`decode_cycle.v`)
-
-Responsibilities:
-
-* Decode instruction
-* Generate immediate
-* Read registers
-* Produce control signals
-
-Outputs:
-
-* RD1
-* RD2
-* Immediate
-* Control signals
-
----
-
-## Execute Stage (`execute_cycle.v`)
-
-Responsibilities:
-
-* ALU operations
-* Address generation
-* Branch target calculation
-
-Outputs:
-
-* ALU result
-* Zero flag
-
----
-
-## Memory Stage (`memory_cycle.v`)
-
-Responsibilities:
-
-* Data memory read
-* Data memory write
-
-Outputs:
-
-* Memory data
-* ALU result
-
----
-
-## Writeback Stage (`writeback_cycle.v`)
-
-Responsible for writing results back into the register file.
-
-Sources:
-
-* ALU result
-* Memory data
-* PC + 4
-
----
-
-## Forwarding Unit (`forwarding_unit.v`)
-
-Resolves data hazards by forwarding data from later stages.
-
-### Purpose
-
-Avoid unnecessary pipeline stalls.
-
----
-
-## Hazard Detection Unit (`hazard_unit.v`)
-
-Detects hazards and inserts stalls when required.
-
-### Handles
-
-* RAW hazards
-* Load-use hazards
-
----
 # 📚 Instruction Set Architecture
 
 The processor implements a subset of the **RV32I Base Integer Instruction Set**. The current implementation supports **R-Type**, **I-Type**, **S-Type**, and **B-Type** instructions.
@@ -856,6 +754,326 @@ else
 ---
 
 
+# Pipeline Stages
+
+## 1. Instruction Fetch (IF)
+
+Responsible for:
+
+* Fetching instructions from instruction memory
+* Maintaining and updating the Program Counter
+* Computing PC + 4
+
+### Inputs
+
+* Current PC
+
+### Outputs
+
+* Instruction
+* PC
+* PC + 4
+
+---
+
+## 2. Instruction Decode (ID)
+
+Responsible for:
+
+* Decoding the instruction
+* Reading source registers
+* Generating immediate values
+* Producing control signals
+
+### Outputs
+
+* RD1
+* RD2
+* Immediate value
+* Destination register
+* Control signals
+
+---
+
+## 3. Execute Stage (EX)
+
+Responsible for:
+
+* Performing ALU operations
+* Address calculation
+* Branch target generation
+* Operand selection
+
+### Outputs
+
+* ALU Result
+* Zero Flag
+* Branch Address
+
+---
+
+## 4. Memory Access Stage (MEM)
+
+Responsible for:
+
+* Reading from data memory
+* Writing to data memory
+
+### Outputs
+
+* Read Data
+* ALU Result
+
+---
+
+## 5. Write Back Stage (WB)
+
+Responsible for writing results back into the register file.
+
+Writeback sources:
+
+* ALU Result
+* Memory Read Data
+* PC + 4
+
+---
+
+# Pipeline Registers
+
+Pipeline registers isolate each stage and preserve intermediate results.
+
+---
+
+## IF/ID Register
+
+Stores:
+
+* Instruction
+* PC
+* PC + 4
+
+Purpose:
+
+Transfers information from Fetch stage to Decode stage.
+
+---
+
+## ID/EX Register
+
+Stores:
+
+* Register operands
+* Immediate values
+* Destination register
+* Control signals
+
+Purpose:
+
+Transfers decoded information to Execute stage.
+
+---
+
+## EX/MEM Register
+
+Stores:
+
+* ALU result
+* Write data
+* Destination register
+* Memory control signals
+
+Purpose:
+
+Transfers execution results to Memory stage.
+
+---
+
+## MEM/WB Register
+
+Stores:
+
+* Memory read data
+* ALU result
+* Destination register
+* Writeback control signals
+
+Purpose:
+
+Transfers final results to Writeback stage.
+
+---
+
+# Instruction Overlap
+
+Pipeline execution enables multiple instructions to occupy different stages simultaneously.
+
+Example:
+
+```assembly
+lw   x1,0(x0)
+lw   x2,4(x0)
+or   x3,x1,x2
+sw   x3,8(x0)
+```
+
+Pipeline execution:
+
+```text
+Cycle →      1    2    3    4    5    6    7    8
+
+lw x1         IF   ID   EX  MEM  WB
+
+lw x2              IF   ID   EX  MEM  WB
+
+or x3                   IF   ID   EX  MEM  WB
+
+sw x3                        IF   ID   EX  MEM
+```
+
+Thus, multiple instructions are executed concurrently.
+
+---
+
+# Data Hazards
+
+A data hazard occurs when an instruction depends on the result of a previous instruction that has not yet completed.
+
+Example:
+
+```assembly
+add x5,x1,x2
+sub x6,x5,x3
+```
+
+The SUB instruction requires x5 before the ADD instruction completes.
+
+---
+
+# Forwarding Unit
+
+To avoid unnecessary stalls, a forwarding unit is implemented.
+
+It forwards results from later stages directly to the Execute stage.
+
+Forwarding sources:
+
+* EX/MEM stage
+* MEM/WB stage
+
+Benefits:
+
+✅ Reduces stalls
+
+✅ Improves throughput
+
+✅ Eliminates unnecessary waiting
+
+---
+
+# Hazard Detection Unit
+
+Some hazards cannot be resolved using forwarding alone.
+
+Example:
+
+```assembly
+lw  x5,0(x1)
+add x6,x5,x2
+```
+
+Since the data from memory becomes available only after the MEM stage, the ADD instruction must be delayed.
+
+The hazard detection unit:
+
+* Detects load-use hazards
+* Inserts stalls when necessary
+* Prevents incorrect execution
+
+---
+
+# Branch Hazards
+
+Branch instructions can change program flow.
+
+Example:
+
+```assembly
+beq x1,x2,label
+```
+
+Until the comparison is complete, the processor does not know the next PC value.
+
+Branch hazards may cause:
+
+* Incorrect instruction fetch
+* Pipeline flushing
+
+---
+
+# Pipeline Performance
+
+### Single-Cycle Processor
+
+```text
+One instruction completes every clock cycle.
+```
+
+Execution:
+
+```text
+Instr1
+Instr2
+Instr3
+Instr4
+```
+
+Sequential execution.
+
+---
+
+### Pipelined Processor
+
+```text
+Multiple instructions execute simultaneously.
+```
+
+Execution:
+
+```text
+Cycle 1 : Instr1 IF
+
+Cycle 2 : Instr1 ID
+          Instr2 IF
+
+Cycle 3 : Instr1 EX
+          Instr2 ID
+          Instr3 IF
+
+Cycle 4 : Instr1 MEM
+          Instr2 EX
+          Instr3 ID
+          Instr4 IF
+```
+
+Result:
+
+Higher instruction throughput.
+
+---
+
+# Advantages of Pipelining
+
+✅ Increased throughput
+
+✅ Better hardware utilization
+
+✅ Reduced average instruction execution time
+
+✅ Improved processor performance
+
+✅ Foundation for advanced architectures
+
+---
 
 
 
